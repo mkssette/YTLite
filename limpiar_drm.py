@@ -2,7 +2,8 @@ import os
 import re
 
 def patch_github_actions():
-    workflow_path = os.path.join(".github", "workflows", "_build_tweaks.yml")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    workflow_path = os.path.join(base_dir, ".github", "workflows", "_build_tweaks.yml")
     if not os.path.exists(workflow_path):
         print(f"[!] Error: No se encontró {workflow_path}")
         return False
@@ -27,6 +28,14 @@ def patch_github_actions():
 
     new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
     
+    # Arreglar el error de Homebrew en macos-latest
+    pattern_brew = r"run: brew install make ldid dpkg"
+    replacement_brew = """run: |
+          export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+          brew untap aws/tap || true
+          brew install make ldid dpkg"""
+    new_content = re.sub(pattern_brew, replacement_brew, new_content)
+
     if new_content == content:
         print("[!] Advertencia: No se encontró el código malicioso en GitHub Actions. ¿Tal vez el desarrollador cambió el código?")
     else:
@@ -38,7 +47,8 @@ def patch_github_actions():
 
 
 def patch_settings():
-    settings_path = "Settings.x"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    settings_path = os.path.join(base_dir, "Settings.x")
     if not os.path.exists(settings_path):
         print(f"[!] Error: No se encontró {settings_path}")
         return False

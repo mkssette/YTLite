@@ -50,7 +50,10 @@ jobs:
 
     steps:
       - name: Install Dependencies
-        run: brew install make ldid dpkg
+        run: |
+          export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+          brew untap aws/tap || true
+          brew install make ldid dpkg
 
       - name: Set PATH environment variable
         run: |
