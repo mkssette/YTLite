@@ -59,66 +59,65 @@ def patch_github_actions():
     new_content = re.sub(pattern_brew, replacement_brew, new_content)
 
     # Arreglar la falta de actions/checkout (sin lo cual no se puede compilar el código fuente)
-    pattern_checkout = r"\s*steps:\s*- name: Install Dependencies"
-    replacement_checkout = """
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Dependencies"""
-    new_content = re.sub(pattern_checkout, replacement_checkout, new_content)
-
-    if new_content == content:
-        print("[!] Advertencia: No se encontró el código malicioso en GitHub Actions. ¿Tal vez el desarrollador cambió el código?")
-    else:
+          wget https://github.com/Dayanch96/YTLite/releases/download/v${{ inputs.tweak_version }}/YTLite.deb -O ytplus.deb
+"""
+    new_content = re.sub(pattern_build, replacement_download, content)
+    
+    if new_content != content:
         with open(workflow_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(new_content)
-        print("[EXCELENTE] Script de GitHub Actions parcheado. Ahora compilará tu código fuente limpio.")
+        print("[OK] GitHub Actions restaurado para descargar YTLite 5.2.2 (con gestor de descargas).")
     
     return True
 
 
 def patch_settings():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    settings_path = os.path.join(base_dir, "Settings.x")
-    if not os.path.exists(settings_path):
-        print(f"[!] Error: No se encontró {settings_path}")
-        return False
-
-    with open(settings_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    if "SupportDevelopment" not in content:
-        print("[OK] El menú de Donaciones/Sponsors ya estaba eliminado en Settings.x.")
-        return True
-
-    # Patrón para borrar el bloque de la variable "support" (Donaciones)
-    pattern_support = r"\s*YTSettingsSectionItem \*support = \[\%c\(YTSettingsSectionItem\) itemWithTitle:LOC\(@\"SupportDevelopment\"\).*?return YES;\n\s*\}\];"
-    # Patrón para borrar la línea donde se añade la sección
-    pattern_add = r"\s*\[sectionItems addObject:support\];"
-
-    new_content = re.sub(pattern_support, "", content, flags=re.DOTALL)
-    new_content = re.sub(pattern_add, "", new_content)
-
-    if new_content == content:
-        print("[!] Advertencia: No se pudo eliminar el código de donaciones.")
-    else:
-        print("[OK] Bloque de donaciones eliminado de Settings.x.")
-
-    # 3. Arreglar la invisibilidad del menú en versiones recientes de YouTube
-    pattern_menu = r"if \(insertIndex != NSNotFound\)\s*\[mutableOrder insertObject:@\(YTLiteSection\) atIndex:insertIndex \+ 1\];\s*return mutableOrder;"
-    replacement_menu = """if (insertIndex != NSNotFound) {
-        [mutableOrder insertObject:@(YTLiteSection) atIndex:insertIndex + 1];
-    } else {
-        [mutableOrder insertObject:@(YTLiteSection) atIndex:0];
-    }
-    return mutableOrder;"""
-    new_content = re.sub(pattern_menu, replacement_menu, new_content)
-
-    with open(settings_path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(new_content)
-        print("[EXCELENTE] Muro de donaciones eliminado exitosamente de Settings.x.")
+    settings_path = "Settings.x"
+    # Vaciar Settings.x para que NO sobreescriba el menú de la versión 5.2.2 precompilada
+    if os.path.exists(settings_path):
+        with open(settings_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("")
+        print("[OK] Settings.x vaciado para permitir que aparezca el menú oficial con el gestor de descargas.")
     
+    ytlite_path = "YTLite.x"
+    # Vaciar YTLite.x para que NO interfiera con la versión 5.2.2 precompilada
+    if os.path.exists(ytlite_path):
+        with open(ytlite_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("")
+        print("[OK] YTLite.x vaciado para evitar duplicación de código.")
+
+    return True
+
+
+def patch_sideloading():
+    sideloading_path = "Sideloading.x"
+    if not os.path.exists(sideloading_path):
+        print(f"[!] Error: No se encontró {sideloading_path}")
+        return False
+        
+    with open(sideloading_path, "r", encoding="utf-8") as f:
+        content = f.read()
+        
+    # Inyectar el bypass de DRM
+    bypass_code = """
+// DRM BYPASS INJECTED
+%hook NSFileManager
+- (BOOL)fileExistsAtPath:(NSString *)path {
+    if ([path isEqualToString:[[NSBundle mainBundle] appStoreReceiptURL].path]) {
+        return YES; // Engañar al DRM de Dayanch96 diciendo que somos de la AppStore
+    }
+    return %orig;
+}
+%end
+"""
+    if "DRM BYPASS INJECTED" not in content:
+        new_content = content.replace("%end\n\n%ctor {", bypass_code + "\n%end\n\n%ctor {")
+        with open(sideloading_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(new_content)
+        print("[EXCELENTE] Bypass de DRM inyectado en Sideloading.x.")
+    else:
+        print("[!] El bypass de DRM ya estaba inyectado en Sideloading.x.")
+
     return True
 
 
@@ -154,35 +153,6 @@ def patch_roothide():
     return True
 
 
-def patch_ytlite():
-    ytlite_path = "YTLite.x"
-    if not os.path.exists(ytlite_path):
-        print(f"[!] Error: No se encontró {ytlite_path}")
-        return False
-
-    with open(ytlite_path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    # Arreglar el spoofing de versión para que YouTube no pida actualizar
-    pattern_version = r"NSString \*fakeVersion = @\"18\.18\.2\";\s*return \(\!ytlBool\(@\"classicQuality\"\) \&\& \!ytlBool\(@\"extraSpeedOptions\"\) \&\& \[originalVersion compare:fakeVersion options:NSNumericSearch\] == NSOrderedDescending\) \? originalVersion : fakeVersion;"
-    replacement_version = """NSString *fakeVersion = @"19.49.4";
-    return ([originalVersion compare:fakeVersion options:NSNumericSearch] == NSOrderedAscending) ? fakeVersion : originalVersion;"""
-    
-    new_content = re.sub(pattern_version, replacement_version, content)
-    
-    pattern_settings = r"if \(\[arg1 isEqualToString:@\"18\.18\.2\"\]\) \{"
-    replacement_settings = """if ([arg1 isEqualToString:@"19.49.4"] || [arg1 isEqualToString:@"18.18.2"]) {"""
-    
-    new_content = re.sub(pattern_settings, replacement_settings, new_content)
-
-    if new_content != content:
-        with open(ytlite_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(new_content)
-        print("[EXCELENTE] Spoofing de versión corregido en YTLite.x (Evita cartel de actualizar).")
-    
-    return True
-
-
 def patch_native_share():
     native_path = "YTNativeShare.x"
     if not os.path.exists(native_path):
@@ -214,8 +184,8 @@ if __name__ == "__main__":
     
     patch_github_actions()
     patch_settings()
+    patch_sideloading()
     patch_roothide()
-    patch_ytlite()
     patch_native_share()
     
     print("¡Proceso completado! Ya puedes subir los cambios a tu repositorio.")
