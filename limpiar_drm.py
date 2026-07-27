@@ -88,6 +88,38 @@ def patch_settings():
     return True
 
 
+def patch_roothide():
+    header_path = os.path.join("Utils", "NSBundle+YTLite.h")
+    if not os.path.exists(header_path):
+        print(f"[!] Error: No se encontró {header_path}")
+        return False
+
+    with open(header_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "#if __has_include(<roothide.h>)" in content:
+        print("[OK] El parche de roothide.h ya estaba aplicado.")
+        return True
+
+    pattern = r"#import <roothide\.h>"
+    replacement = """#if __has_include(<roothide.h>)
+#import <roothide.h>
+#else
+#define jbroot(path) path
+#endif"""
+
+    new_content = re.sub(pattern, replacement, content)
+
+    if new_content == content:
+        print("[!] Advertencia: No se encontró '#import <roothide.h>'.")
+    else:
+        with open(header_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(new_content)
+        print("[EXCELENTE] Dependencia de roothide.h solucionada.")
+
+    return True
+
+
 if __name__ == "__main__":
     print("="*50)
     print("   🛡️  YTLite / YTPlus - ELIMINADOR DE DRM  🛡️")
@@ -96,6 +128,7 @@ if __name__ == "__main__":
     
     patch_github_actions()
     patch_settings()
+    patch_roothide()
     
     print("\n" + "="*50)
     print("✅ Proceso terminado. ¡Tu repositorio está limpio!")
