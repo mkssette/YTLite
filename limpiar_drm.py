@@ -154,6 +154,35 @@ def patch_roothide():
     return True
 
 
+def patch_ytlite():
+    ytlite_path = "YTLite.x"
+    if not os.path.exists(ytlite_path):
+        print(f"[!] Error: No se encontró {ytlite_path}")
+        return False
+
+    with open(ytlite_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Arreglar el spoofing de versión para que YouTube no pida actualizar
+    pattern_version = r"NSString \*fakeVersion = @\"18\.18\.2\";\s*return \(\!ytlBool\(@\"classicQuality\"\) \&\& \!ytlBool\(@\"extraSpeedOptions\"\) \&\& \[originalVersion compare:fakeVersion options:NSNumericSearch\] == NSOrderedDescending\) \? originalVersion : fakeVersion;"
+    replacement_version = """NSString *fakeVersion = @"19.49.4";
+    return ([originalVersion compare:fakeVersion options:NSNumericSearch] == NSOrderedAscending) ? fakeVersion : originalVersion;"""
+    
+    new_content = re.sub(pattern_version, replacement_version, content)
+    
+    pattern_settings = r"if \(\[arg1 isEqualToString:@\"18\.18\.2\"\]\) \{"
+    replacement_settings = """if ([arg1 isEqualToString:@"19.49.4"] || [arg1 isEqualToString:@"18.18.2"]) {"""
+    
+    new_content = re.sub(pattern_settings, replacement_settings, new_content)
+
+    if new_content != content:
+        with open(ytlite_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(new_content)
+        print("[EXCELENTE] Spoofing de versión corregido en YTLite.x (Evita cartel de actualizar).")
+    
+    return True
+
+
 def patch_native_share():
     native_path = "YTNativeShare.x"
     if not os.path.exists(native_path):
@@ -181,15 +210,15 @@ if __name__ == "__main__":
     print("="*50)
     print("   🛡️  YTLite / YTPlus - ELIMINADOR DE DRM  🛡️")
     print("="*50)
-    print("Aplicando parches para liberar tu aplicación...\n")
+    print("Iniciando parcheo automático de GitHub Actions y Theos...")
     
     patch_github_actions()
     patch_settings()
     patch_roothide()
+    patch_ytlite()
     patch_native_share()
     
-    print("\n" + "="*50)
-    print("✅ Proceso terminado. ¡Tu repositorio está limpio!")
+    print("¡Proceso completado! Ya puedes subir los cambios a tu repositorio.")
     print("👉 Recuerda subir (hacer commit y push) los cambios a tu GitHub.")
     print("="*50)
     input("Presiona Enter para salir...")
