@@ -108,7 +108,7 @@ jobs:
 
       - name: Download YouTube Plus (by version)
         run: |
-          wget https://github.com/Dayanch96/YTLite/releases/download/v${{ inputs.tweak_version }}/YTLite.deb -O ytplus.deb
+          wget https://github.com/Dayanch96/YTLite/releases/download/v${{ inputs.tweak_version }}/com.dvntm.ytlite_${{ inputs.tweak_version }}_iphoneos-arm64.deb -O ytplus.deb
 
       - name: Clone PSHeader
         if: ${{ inputs.enable_youpip || inputs.enable_ytuhd || inputs.enable_yq || inputs.enable_ryd || inputs.enable_ytabc || inputs.enable_demc }}

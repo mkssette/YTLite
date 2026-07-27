@@ -58,10 +58,14 @@ def patch_github_actions():
           brew install make ldid dpkg"""
     new_content = re.sub(pattern_brew, replacement_brew, new_content)
 
-    # Arreglar la falta de actions/checkout (sin lo cual no se puede compilar el código fuente)
-          wget https://github.com/Dayanch96/YTLite/releases/download/v${{ inputs.tweak_version }}/YTLite.deb -O ytplus.deb
+    # Revertir la compilación local y volver a descargar el .deb precompilado
+    pattern_build = r"\s*- name: Build YouTube Plus \(Local Source\)\n\s*run: \|\n\s*make clean package DEBUG=0 FINALPACKAGE=1\n\s*mv packages/\*\.deb ytplus\.deb"
+    replacement_download = """
+      - name: Download YouTube Plus (by version)
+        run: |
+          wget https://github.com/Dayanch96/YTLite/releases/download/v${{ inputs.tweak_version }}/com.dvntm.ytlite_${{ inputs.tweak_version }}_iphoneos-arm64.deb -O ytplus.deb
 """
-    new_content = re.sub(pattern_build, replacement_download, content)
+    new_content = re.sub(pattern_build, replacement_download, new_content)
     
     if new_content != content:
         with open(workflow_path, "w", encoding="utf-8", newline="\n") as f:
