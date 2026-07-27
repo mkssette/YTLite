@@ -32,13 +32,23 @@ def patch_github_actions():
     replacement_build = r"""\1
 
       - name: Clone protobuf
-        run: git clone --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git ../protobuf
+        run: git clone -b v3.20.3 --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git ../protobuf
 
       - name: Build YouTube Plus (Local Source)
         run: |
           make clean package DEBUG=0 FINALPACKAGE=1
           mv packages/*.deb ytplus.deb"""
     new_content = re.sub(pattern_build, replacement_build, new_content, count=1)
+
+    # 4. Forzar que Theos siempre se instale quitando los condicionales "if" que dependían de los tweaks extra
+    pattern_theos_cache = r"- name: Cache Theos\n\s*if: \$\{\{.*?\}\}"
+    new_content = re.sub(pattern_theos_cache, "- name: Cache Theos", new_content)
+
+    pattern_theos_setup = r"- name: Setup Theos\n\s*if: \$\{\{ \(\w+\..*?\) && (steps\.theos\.outputs\.cache-hit != 'true') \}\}"
+    new_content = re.sub(pattern_theos_setup, r"- name: Setup Theos\n        if: ${{ \1 }}", new_content)
+
+    pattern_sdk_setup = r"- name: Download iOS SDK\n\s*if: \$\{\{ \(\w+\..*?\) && (steps\.theos\.outputs\.cache-hit != 'true') \}\}"
+    new_content = re.sub(pattern_sdk_setup, r"- name: Download iOS SDK\n        if: ${{ \1 }}", new_content)
 
     # Arreglar el error de Homebrew en macos-latest
     pattern_brew = r"run: brew install make ldid dpkg"

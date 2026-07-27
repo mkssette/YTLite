@@ -104,7 +104,7 @@ jobs:
           fi
 
       - name: Clone protobuf
-        run: git clone --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git ../protobuf
+        run: git clone -b v3.20.3 --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git ../protobuf
 
       - name: Build YouTube Plus (Local Source)
         run: |
