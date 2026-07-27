@@ -101,10 +101,22 @@ def patch_settings():
     new_content = re.sub(pattern_add, "", new_content)
 
     if new_content == content:
-        print("[!] Advertencia: No se pudo eliminar la sección de donaciones. ¿Tal vez cambió el formato?")
+        print("[!] Advertencia: No se pudo eliminar el código de donaciones.")
     else:
-        with open(settings_path, "w", encoding="utf-8", newline="\n") as f:
-            f.write(new_content)
+        print("[OK] Bloque de donaciones eliminado de Settings.x.")
+
+    # 3. Arreglar la invisibilidad del menú en versiones recientes de YouTube
+    pattern_menu = r"if \(insertIndex != NSNotFound\)\s*\[mutableOrder insertObject:@\(YTLiteSection\) atIndex:insertIndex \+ 1\];\s*return mutableOrder;"
+    replacement_menu = """if (insertIndex != NSNotFound) {
+        [mutableOrder insertObject:@(YTLiteSection) atIndex:insertIndex + 1];
+    } else {
+        [mutableOrder insertObject:@(YTLiteSection) atIndex:0];
+    }
+    return mutableOrder;"""
+    new_content = re.sub(pattern_menu, replacement_menu, new_content)
+
+    with open(settings_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(new_content)
         print("[EXCELENTE] Muro de donaciones eliminado exitosamente de Settings.x.")
     
     return True

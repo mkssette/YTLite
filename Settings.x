@@ -29,8 +29,11 @@ static NSString *GetCacheSize() {
     NSArray *order = %orig;
     NSMutableArray *mutableOrder = [order mutableCopy];
     NSUInteger insertIndex = [order indexOfObject:@(1)];
-    if (insertIndex != NSNotFound)
+    if (insertIndex != NSNotFound) {
         [mutableOrder insertObject:@(YTLiteSection) atIndex:insertIndex + 1];
+    } else {
+        [mutableOrder insertObject:@(YTLiteSection) atIndex:0];
+    }
     return mutableOrder;
 }
 %end
