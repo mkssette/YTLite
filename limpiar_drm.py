@@ -36,6 +36,16 @@ def patch_github_actions():
           brew install make ldid dpkg"""
     new_content = re.sub(pattern_brew, replacement_brew, new_content)
 
+    # Arreglar la falta de actions/checkout (sin lo cual no se puede compilar el código fuente)
+    pattern_checkout = r"\s*steps:\s*- name: Install Dependencies"
+    replacement_checkout = """
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies"""
+    new_content = re.sub(pattern_checkout, replacement_checkout, new_content)
+
     if new_content == content:
         print("[!] Advertencia: No se encontró el código malicioso en GitHub Actions. ¿Tal vez el desarrollador cambió el código?")
     else:

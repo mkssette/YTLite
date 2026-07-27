@@ -49,6 +49,9 @@ jobs:
     runs-on: macos-latest
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Install Dependencies
         run: |
           export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
