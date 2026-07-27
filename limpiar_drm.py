@@ -16,18 +16,27 @@ def patch_github_actions():
         print("[OK] GitHub Actions ya estaba parcheado (Libre de DRM).")
         return True
 
-    # Eliminar ambos bloques de descarga maliciosos y poner compilación local
-    # Buscamos desde el paso "Download YouTube Plus (by version)" hasta el "fi" del paso por URL.
-    pattern = r"\s*- name: Download YouTube Plus \(by version\).*?exit 1\n\s*fi"
+    # 1. Eliminar por completo el código de descarga malicioso
+    pattern_download = r"\s*- name: Download YouTube Plus \(by version\).*?exit 1\n\s*fi"
+    new_content = re.sub(pattern_download, "", content, flags=re.DOTALL)
     
-    replacement = """
+    # 2. Insertar Build YouTube Plus DESPUÉS de Clone YouTubeHeader, y quitar el if de Clone YouTubeHeader
+    pattern_header = r"\s*- name: Clone YouTubeHeader\n\s*if: \$\{\{.*?\}\}\n\s*run: \|"
+    replacement_header = """
+      - name: Clone YouTubeHeader
+        run: |"""
+    new_content = re.sub(pattern_header, replacement_header, new_content, count=1)
+
+    # Buscar el final del bloque de Clone YouTubeHeader y añadir el Build
+    pattern_build = r"(cp -r \"\$THEOS/include/YouTubeHeader\" \"\$THEOS/include/YTHeaders\"\n\s*fi)"
+    replacement_build = r"""\1
+
       - name: Build YouTube Plus (Local Source)
         run: |
           make clean package DEBUG=0 FINALPACKAGE=1
           mv packages/*.deb ytplus.deb"""
+    new_content = re.sub(pattern_build, replacement_build, new_content, count=1)
 
-    new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-    
     # Arreglar el error de Homebrew en macos-latest
     pattern_brew = r"run: brew install make ldid dpkg"
     replacement_brew = """run: |
