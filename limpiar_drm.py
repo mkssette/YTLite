@@ -27,9 +27,12 @@ def patch_github_actions():
         run: |"""
     new_content = re.sub(pattern_header, replacement_header, new_content, count=1)
 
-    # Buscar el final del bloque de Clone YouTubeHeader y añadir el Build
+    # Buscar el final del bloque de Clone YouTubeHeader y añadir el clonado de protobuf y Build
     pattern_build = r"(cp -r \"\$THEOS/include/YouTubeHeader\" \"\$THEOS/include/YTHeaders\"\n\s*fi)"
     replacement_build = r"""\1
+
+      - name: Clone protobuf
+        run: git clone --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git ../protobuf
 
       - name: Build YouTube Plus (Local Source)
         run: |
@@ -129,6 +132,29 @@ def patch_roothide():
     return True
 
 
+def patch_native_share():
+    native_path = "YTNativeShare.x"
+    if not os.path.exists(native_path):
+        print(f"[!] Error: No se encontró {native_path}")
+        return False
+
+    with open(native_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    pattern = r'#import "\.\./YouTubeHeader/YTUIUtils\.h"'
+    if not re.search(pattern, content):
+        print("[OK] El parche de YTNativeShare.x ya estaba aplicado.")
+        return True
+
+    replacement = r'#import <YouTubeHeader/YTUIUtils.h>'
+    new_content = re.sub(pattern, replacement, content)
+
+    with open(native_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(new_content)
+    print("[EXCELENTE] Cabecera corregida en YTNativeShare.x.")
+    return True
+
+
 if __name__ == "__main__":
     print("="*50)
     print("   🛡️  YTLite / YTPlus - ELIMINADOR DE DRM  🛡️")
@@ -138,6 +164,7 @@ if __name__ == "__main__":
     patch_github_actions()
     patch_settings()
     patch_roothide()
+    patch_native_share()
     
     print("\n" + "="*50)
     print("✅ Proceso terminado. ¡Tu repositorio está limpio!")

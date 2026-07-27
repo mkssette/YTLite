@@ -104,6 +104,9 @@ jobs:
             cp -r "$THEOS/include/YouTubeHeader" "$THEOS/include/YTHeaders"
           fi
 
+      - name: Clone protobuf
+        run: git clone --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git ../protobuf
+
       - name: Build YouTube Plus (Local Source)
         run: |
           make clean package DEBUG=0 FINALPACKAGE=1
